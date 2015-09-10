@@ -13,15 +13,22 @@ class Entity:
         self.dead = 0
         
 class Player(Entity):
+    def CalculateStats(self):
+        self.damage = self.agility * 5
+        self.health = self.strength * 10
+        self.mana = self.intelligence * 30
+        
     def __init__(self, name = '', strength = 0,agility = 0,intelligence = 0):
         self.name = name
-        self.strength = randint(8,10)
-        self.agility = randint(5,10)
-        self.intelligence= randint(5,10)
+        self.strength = 5
+        self.agility = 5
+        self.intelligence= 5
         self.damage = self.agility * 5
         self.health = self.strength * 10
         self.mana = self.intelligence * 30
         self.dead = 0
+        
+    
 
 class Monster(Entity):
     def __init__(self, name='', health=0,damage=0):
@@ -65,7 +72,7 @@ def DisplayStatus(currentroom,Entities):
     print(availActions + '\n')
 
 def Attack(sender,reciever):
-    dmg = randint(0,sender.damage)    
+    dmg = randint(int(sender.damage/2),sender.damage)    
     reciever.health -= dmg
     print("\n"+sender.name+" hit "+reciever.name + " for " + str(dmg) + " damage!")
     if (reciever.health <=0):
@@ -108,11 +115,33 @@ def main():
         }
     RoomCount = 4
 
-        #Enter Playername
+    #Enter Playername
     cachedPlayer = Player(input('Player Name: '))
     cachedPlayer.age = eval(input('Player Age: '))
 
-    #Enter numMonsters and Monster names
+    #Customize Stats
+    statPoints = 5
+    while(statPoints >0):
+        print("Points to assign: " + str(statPoints))
+        inp = input("Which stat would you like to assign? ([S]trengh/[I]ntelligence/[A]gility)\n").upper()
+        if(inp == 'S'):
+            cachedPlayer.strength += 1
+            statPoints -= 1
+            continue
+        if(inp == 'A'):
+            cachedPlayer.agility += 1
+            statPoints -= 1
+            continue
+        if(inp == 'I'):
+            cachedPlayer.intelligence +=1
+            statPoints -=1
+            continue
+        
+        print ("Can't assign " + inp)
+    #Recalculate stats
+    cachedPlayer.CalculateStats()
+    
+    #Enter numMonsters and Monster names]
     numMonst = eval(input('How many monsters? '))
 
     EntityList = [Entity()] * (numMonst + 1)
