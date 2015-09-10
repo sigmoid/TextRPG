@@ -16,16 +16,20 @@ class Player(Entity):
     def CalculateStats(self):
         self.damage = self.agility * 5
         self.health = self.strength * 10
-        self.mana = self.intelligence * 30
+        self.healthPool = self.strength * 10
+        self.mana = self.intelligence * 25
+        self.manaPool = self.intelligence * 25
         
     def __init__(self, name = '', strength = 0,agility = 0,intelligence = 0):
         self.name = name
         self.strength = 5
         self.agility = 5
-        self.intelligence= 5
+        self.intelligence= 0
         self.damage = self.agility * 5
         self.health = self.strength * 10
-        self.mana = self.intelligence * 30
+        self.healthPool = self.strength * 10
+        self.mana = self.intelligence * 25
+        self.manaPool = self.intelligence * 25
         self.dead = 0
         
     
@@ -47,7 +51,9 @@ def DisplayRooms():
 def DisplayStatus(currentroom,Entities):
     print ('\nRoom: '+currentroom['name'])
     print ('-------------')
-    print (Entities[0].name + ' Health: ' + str(Entities[0].health))
+    print (Entities[0].name + ' Health: ' + str(Entities[0].health) + '/' + str(Entities[0].healthPool))
+    print (Entities[0].name + ' Mana: ' + str(Entities[0].mana) + '/' + str(Entities[0].manaPool))
+    
     print('---ENEMIES---')
     for i in currentroom['monsters']:
         if(i.dead == 0):
@@ -68,6 +74,8 @@ def DisplayStatus(currentroom,Entities):
         if e.dead == 0:
             availActions += "\n-Attack"
             break;
+    if Entities[0].mana >= 25:
+        availActions += "\n-Heal(25m)"
         
     print(availActions + '\n')
 
@@ -84,8 +92,11 @@ def MonsterAttackTurn(Player, Room):
         if(e.dead == 0):
             Attack(e,Player)
     
-def Update():
-    print(EntityList)
+def Clamp(val, min, max):
+    if(val<min):
+        val = min
+    if(val>max):
+        val = max
     
 def main():
     #Global Variables
@@ -195,6 +206,7 @@ def main():
         #Gets case insensitive player input and splits it into list
         inp = input(">").lower().split()
 
+        #Process a turn
         if 'move' == inp[0] and len(inp) > 1:
             if(inp[1] in currentRoom):
                 currentRoom = Rooms[currentRoom[inp[1]]]
@@ -205,11 +217,24 @@ def main():
                 print('Unable to move: "' + inp[1])
                 continue
 
+        if 'heal' == inp[0]:
+            if(EntityList[0].mana >= 25):
+                EntityList[0].mana -= 25
+                EntityList[0].health += 10
+                Clamp(EntityList[0].health,0,EntityList[0].healthPool)
+                print (EntityList[0].name + ' healed 10 hp!')
+                MonsterAttackTurn(EntityList[0],currentRoom)
+                DisplayStatus(currentRoom,EntityList)
+                continue
+            else:
+                print("Can't heal right now!")
             
         if 'attack' == inp[0] and len(inp) > 1:
             enemyFound = 0
             for e in EntityList:
                 if inp[1] == e.name and e.dead == 0:
+                    EntityList[PLAYERID].mana += 5
+                    Clamp(EntityList[PLAYERID].mana,0,EntityList[0].manaPool)
                     Attack(EntityList[PLAYERID],e)
                     MonsterAttackTurn(EntityList[PLAYERID],currentRoom)
                     DisplayStatus(currentRoom,EntityList)
