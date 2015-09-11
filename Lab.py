@@ -37,8 +37,8 @@ class Player(Entity):
 class Monster(Entity):
     def __init__(self, name='', health=0,damage=0):
         self.name = name
-        self.health = randint(25,75)
-        self.damage = randint(5,15)
+        self.health = randint(25,100)
+        self.damage = randint(5,25)
         self.dead = 0
 
 def DisplayRooms():
@@ -53,20 +53,13 @@ def DisplayStatus(currentroom,Entities):
     print ('-------------')
     print (Entities[0].name + ' Health: ' + str(Entities[0].health) + '/' + str(Entities[0].healthPool))
     print (Entities[0].name + ' Mana: ' + str(Entities[0].mana) + '/' + str(Entities[0].manaPool))
-
-    enemyCount=0
-    enemyOutput = ''
+    
+    print('---ENEMIES---')
     for i in currentroom['monsters']:
         if(i.dead == 0):
-            enemyOutput += '\n'+i.name
-            enemyOutput += '\nHealth: ' + str(i.health)
-            enemyCount+=1
-            
-    if enemyCount >0:        
-        print('---ENEMIES---')
-        print(enemyOutput)
-        print('------------')
-        
+            print (i.name)
+            print ('Health: ' + str(i.health))
+    print('------------')
     availActions = "Available Actions:"
     if 'north' in currentroom:
         availActions += "\n-Move north"
@@ -87,7 +80,7 @@ def DisplayStatus(currentroom,Entities):
     print(availActions + '\n')
 
 def Attack(sender,reciever):
-    dmg = randint(int(sender.damage/1.25),sender.damage)    
+    dmg = randint(int(sender.damage/2),sender.damage)    
     reciever.health -= dmg
     print("\n"+sender.name+" hit "+reciever.name + " for " + str(dmg) + " damage!")
     if (reciever.health <=0):
@@ -101,18 +94,18 @@ def MonsterAttackTurn(Player, Room):
     
 def Clamp(val, min, max):
     if(val<min):
-        return min
+        val = min
     if(val>max):
-        return max
-    return val
+        val = max
+    
+def main():
+    #Global Variables
+    PLAYERID = 0
+    currentRoom = 1
 
-#Global Vars
-EntityList = [Entity()]
-PLAYERID = 0
-
-#Create dictionary of Rooms
-Rooms = { 1: {"name":"Hall",
-                 "south":3,
+    #Create dictionary of Rooms
+    Rooms = { 1: {"name":"Hall",
+                  "south":3,
                   "east":2,
                   "monsters":[]},
               
@@ -131,11 +124,7 @@ Rooms = { 1: {"name":"Hall",
                   "west":3,
                   "monsters":[]}
         }
-#Global Variables contd
-currentRoom = 1
-
-def main():
-    RoomCount = len(Rooms)
+    RoomCount = 4
 
     #Enter Playername
     cachedPlayer = Player(input('Player Name: '))
@@ -163,7 +152,7 @@ def main():
     #Recalculate stats
     cachedPlayer.CalculateStats()
     
-    #Enter numMonsters and Monster names
+    #Enter numMonsters and Monster names]
     numMonst = eval(input('How many monsters? '))
 
     EntityList = [Entity()] * (numMonst + 1)
@@ -202,12 +191,7 @@ def main():
 
     #Get start Room
     DisplayRooms()
-    try:
-        currentRoom = Rooms[eval(input('Which room would you like to start in? (1-4) '))]
-    except:
-        currentRoom = Rooms[1]
-        print("I'm going to assume you meant '1'")
-        
+    currentRoom = Rooms[eval(input('Which room would you like to start in? (1-4) '))]
     DisplayStatus(currentRoom,EntityList)
 
     #Update loop
@@ -215,11 +199,9 @@ def main():
 
     while(isRunning):
         if EntityList[PLAYERID].dead == 1:
-            #really long ASCII art, http://bigtext.org/, font = fender
-            #print ('_____.___.              ________  .__           .___\n\\__  |   | ____  __ __  \\______ \\ |__| ____   __| _/\n /   |   |/  _ \\|  |  \\  |    |  \\|  |/ __ \\ / __ |\n \\____   (  <_> )  |  /  |    `   \\  \\  ___// /_/ |\n / ______|\\____/|____/  /_______  /__|\\___  >____ |\n \\/                             \\/        \\/     \\/ ')
-            print("'\\\\  //`                        ||`                 ||` \n  \\\\//                          ||   ''             ||  \n   ||    .|''|, '||  ||`    .|''||   ||  .|''|, .|''||  \n   ||    ||  ||  ||  ||     ||  ||   ||  ||..|| ||  ||  \n  .||.   `|..|'  `|..'|.    `|..||. .||. `|...  `|..||. ")
-            isRunning = 0
-            break
+            #really long ASCII art
+            print ('_____.___.              ________  .__           .___\n\\__  |   | ____  __ __  \\______ \\ |__| ____   __| _/\n /   |   |/  _ \\|  |  \\  |    |  \\|  |/ __ \\ / __ |\n \\____   (  <_> )  |  /  |    `   \\  \\  ___// /_/ |\n / ______|\\____/|____/  /_______  /__|\\___  >____ |\n \\/                             \\/        \\/     \\/ ')
+            return
         
         #Gets case insensitive player input and splits it into list
         inp = input(">").lower().split()
@@ -239,7 +221,7 @@ def main():
             if(EntityList[0].mana >= 25):
                 EntityList[0].mana -= 25
                 EntityList[0].health += 10
-                EntityList[0].health = Clamp(EntityList[0].health,0,EntityList[0].healthPool)
+                Clamp(EntityList[0].health,0,EntityList[0].healthPool)
                 print (EntityList[0].name + ' healed 10 hp!')
                 MonsterAttackTurn(EntityList[0],currentRoom)
                 DisplayStatus(currentRoom,EntityList)
@@ -252,7 +234,7 @@ def main():
             for e in EntityList:
                 if inp[1] == e.name and e.dead == 0:
                     EntityList[PLAYERID].mana += 5
-                    EntityList[PLAYERID].mana= Clamp(EntityList[PLAYERID].mana,0,EntityList[0].manaPool)
+                    Clamp(EntityList[PLAYERID].mana,0,EntityList[0].manaPool)
                     Attack(EntityList[PLAYERID],e)
                     MonsterAttackTurn(EntityList[PLAYERID],currentRoom)
                     DisplayStatus(currentRoom,EntityList)
