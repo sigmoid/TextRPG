@@ -4,10 +4,16 @@
 
 from random import randint
 
+class Spell:
+    def __init__(self,manaCost = 0, healthEffect = 0):
+        self.manaCost = manaCost
+        self.healthEffect = healthEffect
+
 class Entity:
     def __init__(self, name="MISSINGNO", health=0, damage=0, age=0):
         self.name = name
         self.health = health
+        self.healthPool = health
         self.damage = damage
         self.age = age
         self.dead = 0
@@ -31,6 +37,10 @@ class Player(Entity):
         self.mana = self.intelligence * 25
         self.manaPool = self.intelligence * 25
         self.dead = 0
+        self.spells = {
+            'heal':Spell(25,-15),
+            'fireball':Spell(50,30)
+                       }
         
     
 
@@ -38,6 +48,7 @@ class Monster(Entity):
     def __init__(self, name='', health=0,damage=0):
         self.name = name
         self.health = randint(25,75)
+        self.healthPool = self.health
         self.damage = randint(5,15)
         self.dead = 0
 
@@ -57,9 +68,9 @@ def DisplayStatus(currentroom,Entities):
     enemyCount=0
     enemyOutput = ''
     for i in currentroom['monsters']:
-        if(i.dead == 0):
-            enemyOutput += '\n'+i.name
-            enemyOutput += '\nHealth: ' + str(i.health)
+        if(currentroom['monsters'][i].dead == 0):
+            enemyOutput += '\n'+currentroom['monsters'][i].name
+            enemyOutput += '\nHealth: ' + str(currentroom['monsters'][i].health)
             enemyCount+=1
             
     if enemyCount >0:        
@@ -78,7 +89,7 @@ def DisplayStatus(currentroom,Entities):
         availActions += "\n-Move west"
 
     for e in currentroom['monsters']:
-        if e.dead == 0:
+        if currentroom['monsters'][e].dead == 0:
             availActions += "\n-Attack"
             break;
     if Entities[0].mana >= 25:
@@ -86,19 +97,45 @@ def DisplayStatus(currentroom,Entities):
         
     print(availActions + '\n')
 
+#Actions
+def TakeDamage(sender,reciever,dmg):
+    if(dmg>0):
+        reciever.health -= dmg
+        print("\n"+sender.name+" hit "+reciever.name + " for " + str(dmg) + " damage!")
+        if (reciever.health <=0):
+            reciever.dead = 1;
+            print(reciever.name + " has died!")
+    elif(dmg<0):
+        reciever.health -= dmg
+        reciever.health = Clamp(reciever.health,0,reciever.healthPool)
+        print("\n" +reciever.name + " gained " + str(-dmg) + " hp!")
+
 def Attack(sender,reciever):
     dmg = randint(int(sender.damage/1.25),sender.damage)    
-    reciever.health -= dmg
-    print("\n"+sender.name+" hit "+reciever.name + " for " + str(dmg) + " damage!")
-    if (reciever.health <=0):
-        reciever.dead = 1;
-        print(reciever.name + " has died!")
+    TakeDamage(sender,reciever,dmg)
 
+def Cast(sender, spell, reciever):
+    s = sender.spells[spell]
+    
+    if sender.mana >= s.manaCost:
+        sender.mana-= s.manaCost
+        print (sender.name + " cast " + spell + " on " + reciever.name)
+        TakeDamage(sender,reciever,s.healthEffect)
+    else:
+        print ('Not enough mana!')
+    
+
+#Turn Attributes
 def MonsterAttackTurn(Player, Room):
     for e in Room["monsters"]:
-        if(e.dead == 0):
-            Attack(e,Player)
-    
+        ent = Room["monsters"][e]
+        if(ent.dead == 0):
+            Attack(ent,Player)
+
+def ManaTurn(Player):
+    Player.mana += 5 + int(Player.intelligence/2) * 5
+    Player.mana = Clamp(Player.mana, 0, Player.manaPool)
+
 def Clamp(val, min, max):
     if(val<min):
         return min
@@ -114,22 +151,22 @@ PLAYERID = 0
 Rooms = { 1: {"name":"Hall",
                  "south":3,
                   "east":2,
-                  "monsters":[]},
+                  "monsters":{}},
               
               2: {"name":"Bedroom",
                   "south":4,
                   "west":1,
-                  "monsters":[]},
+                  "monsters":{}},
 
               3: {"name":"Kitchen",
                   "north":1,
                   "east":4,
-                  "monsters":[]},
+                  "monsters":{}},
 
               4: {"name":"Bathroom",
                   "north": 2,
                   "west":3,
-                  "monsters":[]}
+                  "monsters":{}}
         }
 #Global Variables contd
 currentRoom = 1
@@ -198,7 +235,7 @@ def main():
 
     #Place monsters in rooms
     for i in range(1,len(EntityList)):
-        Rooms[randint(1,RoomCount)]['monsters'].append(EntityList[i])
+        Rooms[randint(1,RoomCount)]['monsters'][EntityList[i].name]=EntityList[i]
 
     #Get start Room
     DisplayRooms()
@@ -235,6 +272,7 @@ def main():
                 print('Unable to move: "' + inp[1])
                 continue
 
+        '''
         if 'heal' == inp[0]:
             if(EntityList[0].mana >= 25):
                 EntityList[0].mana -= 25
@@ -246,25 +284,41 @@ def main():
                 continue
             else:
                 print("Can't heal right now!")
-            
-        if 'attack' == inp[0] and len(inp) > 1:
-            enemyFound = 0
-            for e in EntityList:
-                if inp[1] == e.name and e.dead == 0:
-                    EntityList[PLAYERID].mana += 5
-                    EntityList[PLAYERID].mana= Clamp(EntityList[PLAYERID].mana,0,EntityList[0].manaPool)
-                    Attack(EntityList[PLAYERID],e)
-                    MonsterAttackTurn(EntityList[PLAYERID],currentRoom)
-                    DisplayStatus(currentRoom,EntityList)
-                    enemyFound=1
-                    break
+        '''
 
-            if(enemyFound == 0):
-                print("There is no monster " + inp[1] + " in this room!")
+        if 'cast' == inp[0]:
+            if len(inp) ==2 and inp[1] in EntityList[0].spells:
+                #make player cast on self if there's no other input
+                Cast(EntityList[0],inp[1],EntityList[0])
+                MonsterAttackTurn(EntityList[0],currentRoom)
+                DisplayStatus(currentRoom,EntityList)
+                continue
+            
+            if len(inp) == 3 and inp[1] in EntityList[0].spells:
+                if inp[2] in currentRoom['monsters']:
+                    Cast(EntityList[0],inp[1],currentRoom['monsters'][inp[2]])
+                    MonsterAttackTurn(EntityList[0],currentRoom)
+                    DisplayStatus(currentRoom, EntityList)
+                    continue
+                else:
+                    print ('There is no monster ' + inp[2] + ' in this room!')
+        
+        if 'attack' == inp[0] and len(inp) > 1:
+            if(inp[1] in currentRoom['monsters']):
+                Attack(EntityList[0],currentRoom['monsters'][inp[1]])
+                MonsterAttackTurn(EntityList[0],currentRoom)
+                ManaTurn(EntityList[0])
                 DisplayStatus(currentRoom,EntityList)
                 continue
             else:
-                continue
+                print('There is no monster named ' + inp[1] + ' in this room')
+                
+        if 'wait' == inp[0]:
+            MonsterAttackTurn(EntityList[0],currentRoom)
+            ManaTurn(EntityList[0])
+            print (EntityList[0].name+ ' waited!')
+            DisplayStatus(currentRoom,EntityList)
+            continue
                 
         if 'closegame' == inp[0]:
             isRunning = 0
