@@ -41,8 +41,6 @@ class Player(Entity):
             'heal':Spell(25,-15),
             'fireball':Spell(50,30)
                        }
-        
-    
 
 class Monster(Entity):
     def __init__(self, name='', health=0,damage=0):
@@ -143,6 +141,13 @@ def Clamp(val, min, max):
         return max
     return val
 
+monsPrefixes = ['Cloud','Ember','Dust','Plasma','Flux','Venom','Acid','Bane','Poison','Germ','Nether','Rot','Sorrow','Half']
+monsSuffixes = ['bane','body','lurker','morph','walker','crawler',' Creeper','fang',' Rat',' Giant',' Dwarf',' Wraith']
+def GenMonsterName():
+    return monsPrefixes[randint(0,len(monsPrefixes))] + monsSuffixes[randint(0,len(monsSuffixes))]
+    
+    
+
 #Global Vars
 EntityList = [Entity()]
 PLAYERID = 0
@@ -205,10 +210,18 @@ def main():
 
     EntityList = [Entity()] * (numMonst + 1)
 
-    #Populate Monster list and get names
-    for e in range(1,len(EntityList)):
-        EntityList[e] = Monster()
-        EntityList[e].name = input('Monster ' + str(e) +': ')
+    nameMonst = input('Give Monsters custom names? Y/N ').upper()
+    
+    if(nameMonst == 'Y'):
+        #Populate Monster list and get names
+        for e in range(1,len(EntityList)):
+            EntityList[e] = Monster()
+            EntityList[e].name = input('Monster ' + str(e) +': ')
+    else:
+        #Populate Monster list and get names
+        for e in range(1,len(EntityList)):
+            EntityList[e] = Monster()
+            EntityList[e].name = GenMonsterName()
     
     #Add Player to list of Entities
     EntityList[PLAYERID] = cachedPlayer
