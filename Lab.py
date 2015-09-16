@@ -86,12 +86,16 @@ def DisplayStatus(currentroom,Entities):
     if 'west' in currentroom:
         availActions += "\n-Move west"
 
+    availActions += "\n-Wait"
+
     for e in currentroom['monsters']:
         if currentroom['monsters'][e].dead == 0:
             availActions += "\n-Attack"
             break;
-    if Entities[0].mana >= 25:
-        availActions += "\n-Heal(25m)"
+
+    for spell in Entities[0].spells:
+        if(Entities[0].mana >= Entities[0].spells[spell].manaCost):
+            availActions += "\n-Cast " + spell
         
     print(availActions + '\n')
 
@@ -108,8 +112,8 @@ def TakeDamage(sender,reciever,dmg):
         reciever.health = Clamp(reciever.health,0,reciever.healthPool)
         print("\n" +reciever.name + " gained " + str(-dmg) + " hp!")
 
-def Attack(sender,reciever):
-    dmg = randint(int(sender.damage/1.25),sender.damage)    
+def Attack(sender,reciever, nerf=1):
+    dmg = int(randint(int(sender.damage/1.25),sender.damage) * nerf)    
     TakeDamage(sender,reciever,dmg)
 
 def Cast(sender, spell, reciever):
@@ -124,11 +128,11 @@ def Cast(sender, spell, reciever):
     
 
 #Turn Attributes
-def MonsterAttackTurn(Player, Room):
+def MonsterAttackTurn(Player, Room, nerfFrac=1):
     for e in Room["monsters"]:
         ent = Room["monsters"][e]
         if(ent.dead == 0):
-            Attack(ent,Player)
+            Attack(ent,Player,nerfFrac)
 
 def ManaTurn(Player):
     Player.mana += 5 + int(Player.intelligence/2) * 5
@@ -142,9 +146,9 @@ def Clamp(val, min, max):
     return val
 
 monsPrefixes = ['Cloud','Ember','Dust','Plasma','Flux','Venom','Acid','Bane','Poison','Germ','Nether','Rot','Sorrow','Half']
-monsSuffixes = ['bane','body','lurker','morph','walker','crawler',' Creeper','fang',' Rat',' Giant',' Dwarf',' Wraith']
+monsSuffixes = ['bane','body','lurker','morph','walker','crawler','creeper','fang','rat','giant','dwarf','wraith']
 def GenMonsterName():
-    return monsPrefixes[randint(0,len(monsPrefixes))] + monsSuffixes[randint(0,len(monsSuffixes))]
+    return monsPrefixes[randint(0,len(monsPrefixes)-1)] + monsSuffixes[randint(0,len(monsSuffixes)-1)]
     
     
 
@@ -248,7 +252,7 @@ def main():
 
     #Place monsters in rooms
     for i in range(1,len(EntityList)):
-        Rooms[randint(1,RoomCount)]['monsters'][EntityList[i].name]=EntityList[i]
+        Rooms[randint(1,RoomCount)]['monsters'][EntityList[i].name.lower()]=EntityList[i]
 
     #Get start Room
     DisplayRooms()
@@ -277,6 +281,7 @@ def main():
         #Process a turn
         if 'move' == inp[0] and len(inp) > 1:
             if(inp[1] in currentRoom):
+                MonsterAttackTurn(EntityList[0],currentRoom,.5)
                 currentRoom = Rooms[currentRoom[inp[1]]]
                 DisplayStatus(currentRoom,EntityList)
                 continue 
@@ -284,20 +289,6 @@ def main():
             else:
                 print('Unable to move: "' + inp[1])
                 continue
-
-        '''
-        if 'heal' == inp[0]:
-            if(EntityList[0].mana >= 25):
-                EntityList[0].mana -= 25
-                EntityList[0].health += 10
-                EntityList[0].health = Clamp(EntityList[0].health,0,EntityList[0].healthPool)
-                print (EntityList[0].name + ' healed 10 hp!')
-                MonsterAttackTurn(EntityList[0],currentRoom)
-                DisplayStatus(currentRoom,EntityList)
-                continue
-            else:
-                print("Can't heal right now!")
-        '''
 
         if 'cast' == inp[0]:
             if len(inp) ==2 and inp[1] in EntityList[0].spells:
@@ -339,11 +330,6 @@ def main():
 
         print('Cannot do ' + str(inp))
 
-        
-        
-        
-        
-        
 
 main()
     
