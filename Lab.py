@@ -3,6 +3,21 @@
 #Adam Waggoner - u1014822
 
 from random import randint
+import pygame
+from pygame.locals import *
+
+##COLORS
+GREY    = (100, 100, 100)
+BLACK   = (  0,   0,  0,)
+LTGREY  = (150, 150, 150)
+WHITE   = (255, 255, 255)
+IVORY   = (238,238,224)
+IVORYSHADOW   = (210,210,210)
+RED     = (255, 126, 103)
+BLUE  = ( 144, 235, 232)
+GREEN   = ( 145, 232, 118)
+YELLOW  = ( 255, 231, 166)
+TRANSP  = (  0,   0,   0,  0)
 
 class Spell:
     def __init__(self,manaCost = 0, healthEffect = 0):
@@ -50,12 +65,16 @@ class Monster(Entity):
         self.damage = randint(5,15)
         self.dead = 0
 
-def DisplayRooms():
-    print('----')
-    print('|1|2|')
-    print('|- -|')
-    print('|3|4|')
-    print('----')
+ROOMSIZE = 150
+ROOMPADDING = 3
+
+def DisplayRooms(surf, rooms,font):
+    for room in rooms:
+        DrawRoom(surf,rooms[room],font)
+
+def DrawRoom(surf, room,font):
+    pygame.draw.rect(surf, BLUE,Rect(room["gridref"][0]*ROOMSIZE + room["gridref"][0]*ROOMPADDING,room["gridref"][1]*ROOMSIZE + room["gridref"][1]*ROOMPADDING,ROOMSIZE,ROOMSIZE))
+    surf.blit(font.render(room["name"],True,WHITE,None),(room["gridref"][0]*ROOMSIZE + room["gridref"][0]*ROOMPADDING,room["gridref"][1]*ROOMSIZE + room["gridref"][1]*ROOMPADDING))
 
 def DisplayStatus(currentroom,Entities):
     print ('\nRoom: '+currentroom['name'])
@@ -160,22 +179,26 @@ PLAYERID = 0
 Rooms = { 1: {"name":"Hall",
                  "south":3,
                   "east":2,
-                  "monsters":{}},
+                  "monsters":{},
+                  "gridref":(0,0)},
               
               2: {"name":"Bedroom",
                   "south":4,
                   "west":1,
-                  "monsters":{}},
+                  "monsters":{},
+                  "gridref":(1,0)},
 
               3: {"name":"Kitchen",
                   "north":1,
                   "east":4,
-                  "monsters":{}},
+                  "monsters":{},
+                  "gridref":(0,1)},
 
               4: {"name":"Bathroom",
                   "north": 2,
                   "west":3,
-                  "monsters":{}}
+                  "monsters":{},
+                  "gridref":(1,1)}
         }
 #Global Variables contd
 currentRoom = 1
@@ -183,6 +206,15 @@ currentRoom = 1
 def main():
     RoomCount = len(Rooms)
 
+    ##Pygame init
+    pygame.init()
+    GAMESURF = pygame.display.set_mode((1024,720),0,32)
+    GAMESURF.fill(LTGREY)
+    roomFont = pygame.font.SysFont("Arial",32)
+    DisplayRooms(GAMESURF, Rooms,roomFont)
+    pygame.display.update()
+    
+    
     #Enter Playername
     cachedPlayer = Player(input('Player Name: '))
     cachedPlayer.age = eval(input('Player Age: '))
@@ -255,7 +287,7 @@ def main():
         Rooms[randint(1,RoomCount)]['monsters'][EntityList[i].name.lower()]=EntityList[i]
 
     #Get start Room
-    DisplayRooms()
+    
     try:
         currentRoom = Rooms[eval(input('Which room would you like to start in? (1-4) '))]
     except:
@@ -268,6 +300,8 @@ def main():
     isRunning = 1;
 
     while(isRunning):
+        pygame.display.update()
+        
         if EntityList[PLAYERID].dead == 1:
             #really long ASCII art, http://bigtext.org/, font = fender
             #print ('_____.___.              ________  .__           .___\n\\__  |   | ____  __ __  \\______ \\ |__| ____   __| _/\n /   |   |/  _ \\|  |  \\  |    |  \\|  |/ __ \\ / __ |\n \\____   (  <_> )  |  /  |    `   \\  \\  ___// /_/ |\n / ______|\\____/|____/  /_______  /__|\\___  >____ |\n \\/                             \\/        \\/     \\/ ')
